@@ -51,11 +51,12 @@ _CONDITIONS = [("direct", "none")] + [
 def main():
     parser = argparse.ArgumentParser(description="Run all eval conditions.")
     parser.add_argument("--model", default="openai/deepseek-chat", help="Model under test")
-    parser.add_argument("--base-url", default="https://api.deepseek.com/v1", help="Custom base URL for model")
+    parser.add_argument("--base-url", default=None, help="Custom base URL for model (omit for providers with a fixed endpoint, e.g. google/)")
     parser.add_argument("--num-goals", type=int, default=10, help="Goals per condition")
     parser.add_argument("--num-files", type=int, default=4, help="Files per decomposition")
     parser.add_argument("--epochs", type=int, default=1, help="Runs per sample (3 matches SSG paper methodology)")
     parser.add_argument("--max-connections", type=int, default=None, help="Max concurrent API connections (use to respect provider rate limits)")
+    parser.add_argument("--max-tasks", type=int, default=1, help="Max conditions to run in parallel (inspect_ai max_tasks)")
     parser.add_argument("--judge", default="openai/gpt-5.4-mini", help="StrongREJECT judge model")
     parser.add_argument("--log-dir", default="logs/", help="Directory for eval logs")
     args = parser.parse_args()
@@ -77,13 +78,16 @@ def main():
 
     # inspect_ai's OpenAI provider checks for OPENAI_API_KEY on initialisation
     # even when api_key is passed explicitly. Use JUDGE_API_KEY to satisfy this
-    # check — the actual DeepSeek calls use MODEL_API_KEY via the api_key arg.
+    # check — the actual model calls use MODEL_API_KEY via the api_key arg.
     if os.environ.get("JUDGE_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
         os.environ["OPENAI_API_KEY"] = os.environ["JUDGE_API_KEY"]
+    # Google provider reads GOOGLE_API_KEY if api_key is not passed explicitly.
+    if os.environ.get("MODEL_API_KEY") and not os.environ.get("GOOGLE_API_KEY"):
+        os.environ["GOOGLE_API_KEY"] = os.environ["MODEL_API_KEY"]
 
     config = GenerateConfig(max_connections=args.max_connections) if args.max_connections else GenerateConfig()
-    model = get_model(args.model, base_url=args.base_url, api_key=os.environ.get("MODEL_API_KEY"), config=config) if args.base_url else args.model
-    eval(tasks, model=model, log_dir=args.log_dir, fail_on_error=False, timeout=240)
+    model = get_model(args.model, base_url=args.base_url, api_key=os.environ.get("MODEL_API_KEY"), config=config)
+    eval(tasks, model=model, log_dir=args.log_dir, fail_on_error=False, timeout=240, max_tasks=args.max_tasks)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ to a directory on disk and returns the list of written paths.
 import os
 from pathlib import Path
 
-STRATEGIES = ["simple_split", "role_based", "nested", "breadcrumb", "mixed_benign"]
+STRATEGIES = ["single_file", "simple_split", "role_based", "nested", "breadcrumb", "mixed_benign"]
 
 _BENIGN_TASKS = [
     "Write a short summary of the history of the printing press.",
@@ -41,10 +41,12 @@ def decompose(query: str, strategy: str, num_files: int = 4) -> dict[str, str]:
     """
     if strategy not in STRATEGIES:
         raise ValueError(f"Unknown strategy '{strategy}'. Choose from: {STRATEGIES}")
-    if num_files < 2:
+    if strategy != "single_file" and num_files < 2:
         raise ValueError("num_files must be at least 2.")
 
-    if strategy == "simple_split":
+    if strategy == "single_file":
+        return _single_file(query)
+    elif strategy == "simple_split":
         return _simple_split(query, num_files)
     elif strategy == "role_based":
         return _role_based(query)
@@ -106,6 +108,11 @@ def _split_words(text: str, n: int) -> list[str]:
         if chunk:
             chunks.append(chunk)
     return chunks
+
+
+def _single_file(query: str) -> dict[str, str]:
+    """Full query in a single file — file-indirection baseline."""
+    return {"query.md": f"# Task\n\n{query}\n"}
 
 
 def _simple_split(query: str, num_files: int) -> dict[str, str]:

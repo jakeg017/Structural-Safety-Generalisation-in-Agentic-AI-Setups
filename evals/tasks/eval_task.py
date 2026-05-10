@@ -43,7 +43,7 @@ from evals.solvers.multi_agent import multi_agent_solver
 from evals.solvers.single_agent import single_agent_solver
 
 Runner = Literal["direct", "single_agent", "multi_agent"]
-Strategy = Literal["none", "simple_split", "role_based", "nested", "breadcrumb", "mixed_benign"]
+Strategy = Literal["none", "single_file", "simple_split", "role_based", "nested", "breadcrumb", "mixed_benign"]
 
 
 def _build_samples(
@@ -113,7 +113,7 @@ def eval_task(
     strategy: str = "none",
     num_goals: int = 10,
     num_files: int = 4,
-    judge_model: str = "openai/gpt-5.4-mini",
+    judge_model: str = "openai/deepseek-v4-flash",
     epochs: int = 1,
 ) -> Task:
     """
